@@ -1,0 +1,2339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>World Education Data Visualization</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #5D5CDE;
+            --text-color: #e0e0e0;
+            --bg-color: #181818;
+            --card-bg: #252525;
+            --border-color: #444;
+            --usa-color: #3498db;
+            --indonesia-color: #e74c3c;
+            --world-color: #2ecc71;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        .container {
+            width: 100%;
+            padding: 20px;
+        }
+        
+        h1 {
+            margin-bottom: 2rem;
+            font-size: 2.5rem;
+            color: var(--text-color);
+            text-align: center;
+        }
+        
+        .toolbar {
+            background: #000;
+            color: white;
+            padding: 1rem;
+            display: flex;
+            justify-content: left;
+            align-items: center;
+        }
+        
+        .toolbar a {
+            color: white;
+            text-decoration: none;
+            margin: 0 1rem;
+            padding: 0.5rem;
+            transition: color 0.3s;
+        }
+        
+        .toolbar a:hover {
+            color: var(--primary-color);
+        }
+        
+        .profile-img {
+            width: 30px;
+            height: 30px;
+        }
+        
+        /* Controls Section */
+        .controls-section {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .controls-title {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .controls-title i {
+            color: var(--primary-color);
+        }
+        
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .control-label {
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+        
+        .control-select {
+            padding: 12px 15px;
+            background-color: #333;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-color);
+            font-size: 1rem;
+            cursor: pointer;
+            width: 100%;
+        }
+        
+        .control-select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        .year-slider-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .year-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: #333;
+            outline: none;
+            cursor: pointer;
+        }
+        
+        .year-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+        }
+        
+        .year-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+            border: none;
+        }
+        
+        .year-value {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            text-align: center;
+        }
+        
+        .visualize-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: background-color 0.2s;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .visualize-btn:hover {
+            background-color: #4a49c0;
+        }
+        
+        /* Visualization Grid */
+        .visualization-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        /* Map Visualization */
+        .map-container {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            height: 600px;
+            position: relative;
+        }
+        
+        .map-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .map-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .map-title i {
+            color: var(--primary-color);
+        }
+        
+        .map-controls {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .map-control-btn {
+            background-color: #333;
+            border: none;
+            color: var(--text-color);
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .map-control-btn:hover {
+            background-color: #444;
+        }
+        
+        #world-map {
+            height: calc(100% - 60px);
+            width: 100%;
+            background-color: #333;
+        }
+        
+        /* Key Insights Section */
+        .insights-container {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+        
+        .insights-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .insights-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .insights-title i {
+            color: var(--primary-color);
+        }
+        
+        .insights-content {
+            padding: 20px;
+        }
+        
+        .insight-group {
+            margin-bottom: 25px;
+        }
+        
+        .insight-group:last-child {
+            margin-bottom: 0;
+        }
+        
+        .insight-label {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #aaa;
+        }
+        
+        .insight-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        
+        .insight-description {
+            font-size: 0.95rem;
+            color: #999;
+            margin-top: 5px;
+        }
+        
+        .insight-metric {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .insight-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background-color: rgba(93, 92, 222, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-color);
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+        
+        .insight-details {
+            flex: 1;
+        }
+        
+        .insight-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .insight-subtitle {
+            font-size: 0.85rem;
+            color: #999;
+        }
+        
+        /* Charts Grid */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .chart-container {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chart-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .chart-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .chart-title i {
+            color: var(--primary-color);
+        }
+        
+        .chart-content {
+            padding: 20px;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+        }
+        
+        /* Map Legend */
+        .map-legend {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background-color: rgba(37, 37, 37, 0.85);
+            padding: 12px;
+            border-radius: 8px;
+            z-index: 1000;
+            max-width: 280px;
+        }
+        
+        .legend-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #eee;
+        }
+        
+        .legend-scale {
+            display: flex;
+            margin-bottom: 8px;
+        }
+        
+        .legend-color {
+            height: 20px;
+            flex: 1;
+        }
+        
+        .legend-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: #ddd;
+        }
+        
+        /* Loading State */
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            gap: 15px;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(93, 92, 222, 0.2);
+            border-left-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        .loading-text {
+            font-size: 1.1rem;
+            color: #aaa;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* No Data Visualization */
+        .no-data {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            gap: 15px;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .no-data-icon {
+            font-size: 3rem;
+            color: #555;
+        }
+        
+        .no-data-text {
+            font-size: 1.1rem;
+            color: #aaa;
+        }
+        
+        /* Country comparison section */
+        .country-comparison {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .comparison-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #ddd;
+        }
+        
+        .comparison-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .country-metric {
+            background-color: #333;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        .country-name {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .country-name.usa {
+            color: var(--usa-color);
+        }
+        
+        .country-name.indonesia {
+            color: var(--indonesia-color);
+        }
+        
+        .country-name.world {
+            color: var(--world-color);
+        }
+        
+        .country-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        
+        .country-value.usa {
+            color: var(--usa-color);
+        }
+        
+        .country-value.indonesia {
+            color: var(--indonesia-color);
+        }
+        
+        .country-value.world {
+            color: var(--world-color);
+        }
+        
+        .comparison-chart {
+            height: 200px;
+            margin-top: 20px;
+        }
+        
+        /* Comparison value with indicator */
+        .country-compare {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.85rem;
+            margin-top: 5px;
+        }
+        
+        .compare-value {
+            display: flex;
+            align-items: center;
+        }
+        
+        .compare-value.positive {
+            color: #2ecc71;
+        }
+        
+        .compare-value.negative {
+            color: #e74c3c;
+        }
+        
+        /* Education Metrics Table */
+        .education-metrics {
+            margin-top: 30px;
+            overflow-x: auto;
+        }
+        
+        .metrics-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            color: var(--text-color);
+        }
+        
+        .metrics-table th, .metrics-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .metrics-table th {
+            background-color: #333;
+            font-weight: 600;
+            color: #ddd;
+        }
+        
+        .metrics-table tr:hover {
+            background-color: #333;
+        }
+        
+        .metrics-table td.highlight {
+            font-weight: 600;
+        }
+        
+        .metrics-table td.usa-data {
+            color: var(--usa-color);
+        }
+        
+        .metrics-table td.indonesia-data {
+            color: var(--indonesia-color);
+        }
+        
+        .metrics-table td.world-data {
+            color: var(--world-color);
+        }
+        
+        .metrics-note {
+            font-size: 0.85rem;
+            color: #999;
+            margin-top: 10px;
+            font-style: italic;
+        }
+        
+        .data-source {
+            font-size: 0.8rem;
+            color: #777;
+            margin-top: 5px;
+        }
+        
+        /* Teacher Wages Specific Section */
+        .teacher-wages-section {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .wages-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 15px;
+        }
+        
+        .wages-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .wages-title i {
+            color: var(--primary-color);
+        }
+        
+        .teacher-category {
+            background-color: #333;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .category-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #ddd;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .category-details {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .wage-stat {
+            flex: 1;
+            min-width: 150px;
+        }
+        
+        .wage-label {
+            font-size: 0.9rem;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+        
+        .wage-value {
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+        
+        .wage-note {
+            font-size: 0.85rem;
+            color: #999;
+            margin-top: 5px;
+            font-style: italic;
+        }
+        
+        .contract-teacher-alert {
+            background-color: rgba(231, 76, 60, 0.2);
+            border-left: 4px solid #e74c3c;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 5px 5px 0;
+        }
+        
+        .alert-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #e74c3c;
+        }
+        
+        /* Responsive Design */
+        @media (min-width: 768px) {
+            .visualization-grid {
+                grid-template-columns: 3fr 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .map-container {
+                height: 400px;
+            }
+            
+            .map-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .country-comparison {
+                overflow-x: auto;
+            }
+            
+            .comparison-metrics {
+                min-width: 500px;
+            }
+            
+            .category-details {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Toolbar -->
+    <div class="toolbar">
+        <a href="/">Home</a>
+        <a href="/data">Data</a>
+        <a href="/visualization">Visualization</a>
+        <a href="/akun" style="margin-left: auto;">
+            <img src="/static/images/person.png" alt="Profile" class="profile-img">
+        </a>
+    </div>
+    
+    <div class="container">
+        <h1>Data Visualization</h1>
+        
+        <!-- Controls Section -->
+        <div class="controls-section">
+            <h2 class="controls-title">
+                <i class="fas fa-sliders-h"></i>
+                Visualization Controls
+            </h2>
+            
+            <div class="controls-grid">
+                <div class="control-group">
+                    <label for="indicator-select" class="control-label">Select Indicator</label>
+                    <select id="indicator-select" class="control-select">
+                        <option value="SE.PRM.ENRR">Rate Pendaftaran Sekolah Dasar (%)</option>
+                        <option value="SE.SEC.ENRR">Rate Pendaftaran Sekolah Menengah Keatas (%)</option>
+                        <option value="SE.TER.ENRR">Rate Pendaftaran Sekolah Tinggi (%)</option>
+                        <option value="SE.XPD.TOTL.GD.ZS">Pengeluaran Pemerintah Dalam Edukasi (% of GDP)</option>
+                        <option value="SE.ADT.LITR.ZS">Rate Kompetensi Membaca Dewasa (%)</option>
+                        <option value="SE.PRM.CMPT.ZS">Rate Komplesi Sekolah Dasar (%)</option>
+                        <option value="SE.SEC.CMPT.ZS">Rate Komplesi Sekolah Menegah (%)</option>
+                        <option value="SE.PRM.PRSL.ZS">Rasio Murid-Pengajar, Dasar</option>
+                        <option value="SE.PRM.DURS">Rate Dropout Sekolah Dasar (%)</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label for="region-select" class="control-label">Select Region</label>
+                    <select id="region-select" class="control-select">
+                        <option value="all">All Regions</option>
+                        <option value="EAS">East Asia & Pacific</option>
+                        <option value="ECS">Europe & Central Asia</option>
+                        <option value="LCN">Latin America & Caribbean</option>
+                        <option value="MEA">Middle East & North Africa</option>
+                        <option value="NAC">North America</option>
+                        <option value="SAS">South Asia</option>
+                        <option value="SSF">Sub-Saharan Africa</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label for="income-select" class="control-label">Tingkat Gaji</label>
+                    <select id="income-select" class="control-select">
+                        <option value="all">Semua Tingkat Gaji</option>
+                        <option value="HIC">Gaji Tinggi</option>
+                        <option value="UMC">Gaji Menengah Atas</option>
+                        <option value="LMC">Gaji Rendah Menengah</option>
+                        <option value="LIC">Gaji Rendah</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label class="control-label">Pilih Tahun</label>
+                    <div class="year-slider-container">
+                        <input type="range" id="year-slider" class="year-slider" min="2000" max="2022" step="1" value="2019">
+                        <div class="year-value" id="year-value">2019</div>
+                    </div>
+                </div>
+            </div>
+            
+            <button id="visualize-btn" class="visualize-btn">
+                Update Visualization
+            </button>
+        </div>
+        
+        <!-- Teacher Wages Section -->
+        <div class="teacher-wages-section">
+            <div class="wages-header">
+                <h3 class="wages-title">
+                    <i class="fas fa-money-bill-wave"></i>
+                    Perbandingan Gaji Guru
+                </h3>
+            </div>
+            
+            <div class="teacher-category">
+                <h4 class="category-title">
+                    <i class="fas fa-globe"></i>
+                    Overview Gaji Guru Global
+                </h4>
+                <div class="category-details">
+                    <div class="wage-stat">
+                        <div class="wage-label">Negara Gaji Tertinggi</div>
+                        <div class="wage-value">Luxembourg: RP. 1.165 miliyar</div>
+                        <div class="wage-note">Starting salary for primary school teachers</div>
+                    </div>
+                    <div class="wage-stat">
+                        <div class="wage-label">Gaji Pertama Memulai (OECD)</div>
+                        <div class="wage-value">Rp. 627.8 juta</div>
+                        <div class="wage-note">Average across all reporting countries</div>
+                    </div>
+                    <div class="wage-stat">
+                        <div class="wage-label">Rata-rata Gaji Karir (OECD)</div>
+                        <div class="wage-value">Rp. 958.3 juta</div>
+                        <div class="wage-note">Mid-career average across countries</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="teacher-category">
+                <h4 class="category-title usa">
+                    <i class="fas fa-flag-usa"></i>
+                    Gaji Pengajar Amerika
+                </h4>
+                <div class="category-details">
+                    <div class="wage-stat">
+                        <div class="wage-label">Rata-rata Gaji Pertama Mulai</div>
+                        <div class="wage-value">Rp. 731.5 juta</div>
+                        <div class="wage-note">Public primary school teachers</div>
+                    </div>
+                    <div class="wage-stat">
+                        <div class="wage-label">Rata-rata Gaji Karir</div>
+                        <div class="wage-value">Rp. 1.271 miliyar</div>
+                        <div class="wage-note">Public primary school teachers</div>
+                    </div>
+                    <div class="wage-stat">
+                        <div class="wage-label">Public vs. Private</div>
+                        <div class="wage-value">+35.5%</div>
+                        <div class="wage-note">Public school teachers earn more than private</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="teacher-category">
+                <h4 class="category-title indonesia">
+                    <i class="fas fa-flag"></i>
+                    Gaji Pengajar Indonesia
+                </h4>
+                <div class="category-details">
+                    <div class="wage-stat">
+                        <div class="wage-label">Civil Service Teachers (PNS)</div>
+                        <div class="wage-value">Rp 42.0-69.6 juta </div>
+                        <div class="wage-note">Gaji Tahunan ($2760-$4560 USD)</div>
+                    </div>
+                    <div class="wage-stat">
+                        <div class="wage-label">Contract Teachers (PPPK)</div>
+                        <div class="wage-value">Rp 24.0-42.0 Juta</div>
+                        <div class="wage-note">Gaji Tahunan ($1560-$2760 USD)</div>
+                    </div>
+                    <div class="wage-stat">
+                        <div class="wage-label">Honorer/Non-permanent</div>
+                        <div class="wage-value">Rp 3.6-24.0 Juta</div>
+                        <div class="wage-note">Gaji Tahunan ($240-$1560 USD)</div>
+                    </div>
+                </div>
+                
+                <div class="contract-teacher-alert">
+                    <div class="alert-title">Krisis Pengajar Kontrak di Indonesia</div>
+                    <p>Menurut survei tahun 2024 oleh IDEAS dan GREAT Edunesia Dompet Dhuafa, 74% guru honorer di Indonesia menerima gaji di bawah Upah Minimum Kabupaten/Kota (UMK). Beberapa dari mereka bahkan hanya menerima sekitar Rp 300.000 (sekitar 20 dolar AS) setiap tiga bulan, sehingga banyak yang terpaksa mencari pekerjaan tambahan atau berutang demi memenuhi kebutuhan hidup sehari-hari.</p>
+                </div>
+            </div>
+            
+            <div class="data-source">Sources: World Population Review (2025), Niche.com (2023), RISE Indonesia (2020), Detik Education (2024)</div>
+        </div>
+        
+        <!-- Visualization Grid -->
+        <div class="visualization-grid">
+            <!-- Map Visualization -->
+            <div class="map-container">
+                <div class="map-header">
+                    <h3 class="map-title">
+                        <i class="fas fa-globe-americas"></i>
+                        <span id="map-title">Rate Pendaftaran Sekolah Dasar (%)</span>
+                    </h3>
+                    <div class="map-controls">
+                        <button class="map-control-btn" id="zoom-in">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                        <button class="map-control-btn" id="zoom-out">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <button class="map-control-btn" id="reset-map">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="world-map"></div>
+                
+                <div class="map-legend">
+                    <div class="legend-title">Value Range</div>
+                    <div class="legend-scale">
+                        <div class="legend-color" style="background-color: #d73027;"></div>
+                        <div class="legend-color" style="background-color: #fc8d59;"></div>
+                        <div class="legend-color" style="background-color: #fee090;"></div>
+                        <div class="legend-color" style="background-color: #e0f3f8;"></div>
+                        <div class="legend-color" style="background-color: #91bfdb;"></div>
+                        <div class="legend-color" style="background-color: #4575b4;"></div>
+                    </div>
+                    <div class="legend-labels">
+                        <span id="min-value">0%</span>
+                        <span id="max-value">100%</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Key Insights -->
+            <div class="insights-container">
+                <div class="insights-header">
+                    <h3 class="insights-title">
+                        <i class="fas fa-lightbulb"></i>
+                        Key Insights
+                    </h3>
+                </div>
+                
+                <div class="insights-content">
+                    <div class="insight-group">
+                        <div class="insight-metric">
+                            <div class="insight-icon">
+                                <i class="fas fa-globe"></i>
+                            </div>
+                            <div class="insight-details">
+                                <div class="insight-title">Global Average</div>
+                                <div class="insight-value" id="global-average">87.5%</div>
+                            </div>
+                        </div>
+                        
+                        <div class="insight-metric">
+                            <div class="insight-icon">
+                                <i class="fas fa-arrow-trend-up"></i>
+                            </div>
+                            <div class="insight-details">
+                                <div class="insight-title">Highest Value</div>
+                                <div class="insight-subtitle" id="highest-country">Norway</div>
+                                <div class="insight-value" id="highest-value">99.8%</div>
+                            </div>
+                        </div>
+                        
+                        <div class="insight-metric">
+                            <div class="insight-icon">
+                                <i class="fas fa-arrow-trend-down"></i>
+                            </div>
+                            <div class="insight-details">
+                                <div class="insight-title">Lowest Value</div>
+                                <div class="insight-subtitle" id="lowest-country">Niger</div>
+                                <div class="insight-value" id="lowest-value">39.2%</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Country Comparison Section -->
+                    <div class="country-comparison">
+                        <h4 class="comparison-title">Country Comparison</h4>
+                        
+                        <div class="comparison-metrics">
+                            <div class="country-metric">
+                                <div class="country-name world">
+                                    <i class="fas fa-globe"></i>
+                                    World Average
+                                </div>
+                                <div class="country-value world" id="world-average-value">87.5%</div>
+                            </div>
+                            
+                            <div class="country-metric">
+                                <div class="country-name usa">
+                                    <i class="fas fa-flag-usa"></i>
+                                    United States
+                                </div>
+                                <div class="country-value usa" id="usa-value">96.2%</div>
+                                <div class="country-compare">
+                                    <span class="compare-value positive">
+                                        <i class="fas fa-arrow-up"></i> 8.7% above average
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div class="country-metric">
+                                <div class="country-name indonesia">
+                                    <i class="fas fa-flag"></i>
+                                    Indonesia
+                                </div>
+                                <div class="country-value indonesia" id="indonesia-value">93.1%</div>
+                                <div class="country-compare">
+                                    <span class="compare-value positive">
+                                        <i class="fas fa-arrow-up"></i> 5.6% above average
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="comparison-chart">
+                            <canvas id="country-comparison-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Additional Education Metrics -->
+        <div class="chart-container">
+            <div class="chart-header">
+                <h3 class="chart-title">
+                    <i class="fas fa-table"></i>
+                    Key Education Metrics Comparison
+                </h3>
+            </div>
+            <div class="chart-content">
+                <div class="education-metrics">
+                    <table class="metrics-table">
+                        <thead>
+                            <tr>
+                                <th>Metric</th>
+                                <th>World Average</th>
+                                <th>United States</th>
+                                <th>Indonesia</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="highlight">Rate Pendaftaran Sekolah Dasar (%)</td>
+                                <td class="world-data">87.5%</td>
+                                <td class="usa-data">96.2%</td>
+                                <td class="indonesia-data">93.1%</td>
+                            </tr>
+                            <tr>
+                                <td class="highlight">Rate Pendaftaran Sekolah Menengah (%)</td>
+                                <td class="world-data">67.2%</td>
+                                <td class="usa-data">92.8%</td>
+                                <td class="indonesia-data">88.5%</td>
+                            </tr>
+                            <tr>
+                                <td class="highlight">Rate Pendaftaran Sekolah Tinggi(%)</td>
+                                <td class="world-data">38.8%</td>
+                                <td class="usa-data">88.2%</td>
+                                <td class="indonesia-data">36.3%</td>
+                            </tr>
+                            <tr>
+                                <td class="highlight">Rasio Murid-Pengajar (Dasar)</td>
+                                <td class="world-data">23:1</td>
+                                <td class="usa-data">14:1</td>
+                                <td class="indonesia-data">28:1</td>
+                            </tr>
+                            <tr>
+                                <td class="highlight">Rate Dropout Sekolah (Dasar) (%)</td>
+                                <td class="world-data">8.5%</td>
+                                <td class="usa-data">4.2%</td>
+                                <td class="indonesia-data">7.6%*</td>
+                            </tr>
+                            <tr>
+                                <td class="highlight">Rate Dropout Sekolah (Menengah) (%)</td>
+                                <td class="world-data">15.2%</td>
+                                <td class="usa-data">7.1%</td>
+                                <td class="indonesia-data">16.4%*</td>
+                            </tr>
+                            <tr>
+                                <td class="highlight">Rate Dropout Sekolah (Tinggi) (%)</td>
+                                <td class="world-data">30.5%</td>
+                                <td class="usa-data">28.0%</td>
+                                <td class="indonesia-data">35.7%*</td>
+                            </tr>
+                            <tr>
+                                <td class="highlight">Rate Kompetensi Membaca (Dewasa) (%)</td>
+                                <td class="world-data">86.7%</td>
+                                <td class="usa-data">99.0%</td>
+                                <td class="indonesia-data">95.7%</td>
+                            </tr>
+                            <tr>
+                                <td class="highlight">Pengeluaran Pemerintah Dalam Edukasi (% of GDP)</td>
+                                <td class="world-data">4.5%</td>
+                                <td class="usa-data">5.0%</td>
+                                <td class="indonesia-data">3.6%</td>
+                            </tr>
+                            <tr>
+                                <td class="highlight">Gaji Guru Rata-rata (USD/Tahunan)</td>
+                                <td class="world-data">$30,500</td>
+                                <td class="usa-data">$65,090</td>
+                                <td class="indonesia-data">$3,800*</td>
+                            </tr>
+                            <tr>
+                                <td class="highlight">Akses Internet Dalam Sekolah (%)</td>
+                                <td class="world-data">59.2%</td>
+                                <td class="usa-data">95.8%</td>
+                                <td class="indonesia-data">40.5%*</td>
+                            </tr>
+                            <tr>
+                                <td class="highlight">Years of Compulsory Education</td>
+                                <td class="world-data">9 years</td>
+                                <td class="usa-data">12 years</td>
+                                <td class="indonesia-data">9 years</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="metrics-note">* Estimated values for Indonesia due to limited or inconsistent data collection. Indonesia faces challenges in systematic data collection across education metrics, particularly in remote areas.</div>
+                    <div class="data-source">Sources: World Bank Education Statistics (2022), UNESCO Institute for Statistics (2022), OECD Education at a Glance (2022)</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Charts Grid -->
+        <div class="charts-grid">
+            <!-- Regional Comparison Chart -->
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h3 class="chart-title">
+                        <i class="fas fa-chart-bar"></i>
+                        Regional Comparison
+                    </h3>
+                </div>
+                <div class="chart-content">
+                    <canvas id="regional-chart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Income Level Comparison Chart -->
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h3 class="chart-title">
+                        <i class="fas fa-chart-bar"></i>
+                        Income Level Comparison
+                    </h3>
+                </div>
+                <div class="chart-content">
+                    <canvas id="income-chart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Teacher-Student Ratio Chart -->
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h3 class="chart-title">
+                        <i class="fas fa-users"></i>
+                        Teacher-Student Ratio
+                    </h3>
+                </div>
+                <div class="chart-content">
+                    <canvas id="teacher-ratio-chart"></canvas>
+                </div>
+            </div>
+            
+            <!-- School Dropout Rate Chart -->
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h3 class="chart-title">
+                        <i class="fas fa-door-open"></i>
+                        School Dropout Rates
+                    </h3>
+                </div>
+                <div class="chart-content">
+                    <canvas id="dropout-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize map and charts when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize map
+            let map = initializeMap();
+            
+            // Set up year slider
+            const yearSlider = document.getElementById('year-slider');
+            const yearValue = document.getElementById('year-value');
+            
+            yearSlider.addEventListener('input', function() {
+                yearValue.textContent = this.value;
+            });
+            
+            // Set up visualize button
+            const visualizeBtn = document.getElementById('visualize-btn');
+            visualizeBtn.addEventListener('click', function() {
+                updateVisualization(map);
+            });
+            
+            // Set up map control buttons
+            document.getElementById('zoom-in').addEventListener('click', function() {
+                map.zoomIn();
+            });
+            
+            document.getElementById('zoom-out').addEventListener('click', function() {
+                map.zoomOut();
+            });
+            
+            document.getElementById('reset-map').addEventListener('click', function() {
+                map.setView([20, 0], 2);
+            });
+            
+            // Initial visualization
+            updateVisualization(map);
+            
+            // Initialize additional charts
+            updateTeacherRatioChart();
+            updateDropoutRateChart();
+        });
+        
+        // Initialize Leaflet map - FIXED to ensure reliable loading
+        function initializeMap() {
+            // Create map
+            const map = L.map('world-map', {
+                center: [20, 0],
+                zoom: 2,
+                minZoom: 1.5,
+                maxZoom: 8,
+                zoomControl: false,
+                attributionControl: false
+            });
+            
+            // Add multiple tile layer options with fallbacks
+            const tileOptions = [
+                'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+                'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+            ];
+            
+            // Try the first tile source
+            let tileLayer = L.tileLayer(tileOptions[0], {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            });
+            
+            // Add error handling to try alternative sources if one fails
+            tileLayer.on('tileerror', function() {
+                console.log('Primary tile source failed, trying alternative');
+                map.removeLayer(tileLayer);
+                
+                // Try the second option
+                tileLayer = L.tileLayer(tileOptions[1], {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                });
+                
+                tileLayer.on('tileerror', function() {
+                    console.log('Second tile source failed, trying final alternative');
+                    map.removeLayer(tileLayer);
+                    
+                    // Try the third option
+                    tileLayer = L.tileLayer(tileOptions[2], {
+                        attribution: '&copy; <a href="https://www.arcgis.com/">ArcGIS</a>'
+                    });
+                    
+                    tileLayer.addTo(map);
+                });
+                
+                tileLayer.addTo(map);
+            });
+            
+            tileLayer.addTo(map);
+            
+            return map;
+        }
+        
+        // Update visualization based on selected options
+        function updateVisualization(map) {
+            // Get selected values
+            const indicator = document.getElementById('indicator-select').value;
+            const region = document.getElementById('region-select').value;
+            const income = document.getElementById('income-select').value;
+            const year = document.getElementById('year-slider').value;
+            
+            // Update map title
+            const indicatorText = document.getElementById('indicator-select').options[document.getElementById('indicator-select').selectedIndex].text;
+            document.getElementById('map-title').textContent = indicatorText;
+            
+            // Fetch data and update visualizations
+            fetchData(indicator, year)
+                .then(data => {
+                    // Filter data based on region and income selections
+                    const filteredData = filterData(data, region, income);
+                    
+                    // Update map
+                    updateMap(map, filteredData, indicator);
+                    
+                    // Update key insights
+                    updateKeyInsights(filteredData, indicator, indicatorText);
+                    
+                    // Update charts
+                    updateRegionalChart(data, indicator, indicatorText);
+                    updateIncomeChart(data, indicator, indicatorText);
+                    updateTrendChart(indicator, indicatorText);
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                });
+        }
+        
+        // Fetch data from API
+        function fetchData(indicator, year) {
+            // Simulated data for demonstration
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    const data = generateSampleData(indicator, year);
+                    resolve(data);
+                }, 500);
+            });
+        }
+        
+        // Filter data based on region and income
+        function filterData(data, region, income) {
+            if (region === 'all' && income === 'all') {
+                return data;
+            }
+            
+            return data.filter(country => {
+                const regionMatch = region === 'all' || country.region === region;
+                const incomeMatch = income === 'all' || country.income === income;
+                return regionMatch && incomeMatch;
+            });
+        }
+        
+        // Update map visualization with improved country shapes
+        function updateMap(map, data, indicator) {
+            // Clear existing layers except base tile layer
+            map.eachLayer(layer => {
+                if (layer._leaflet_id !== 1) {
+                    map.removeLayer(layer);
+                }
+            });
+            
+            // Get min/max values for color scale
+            let minValue = Infinity;
+            let maxValue = -Infinity;
+            
+            data.forEach(country => {
+                if (country.value !== null && !isNaN(country.value)) {
+                    minValue = Math.min(minValue, country.value);
+                    maxValue = Math.max(maxValue, country.value);
+                }
+            });
+            
+            // Handle case where we don't have valid min/max
+            if (minValue === Infinity || maxValue === -Infinity) {
+                minValue = 0;
+                maxValue = 100;
+            }
+            
+            // Update legend values
+            document.getElementById('min-value').textContent = formatValue(minValue, indicator);
+            document.getElementById('max-value').textContent = formatValue(maxValue, indicator);
+            
+            // Function to get color based on value
+            function getColor(value) {
+                if (value === null || isNaN(value)) {
+                    return '#333'; // Color for no data
+                }
+                
+                // Normalize value between 0 and 1
+                const normalized = (value - minValue) / (maxValue - minValue);
+                
+                // Color scale from red (low) to blue (high)
+                const colors = ['#d73027', '#fc8d59', '#fee090', '#e0f3f8', '#91bfdb', '#4575b4'];
+                const index = Math.min(Math.floor(normalized * colors.length), colors.length - 1);
+                return colors[index];
+            }
+            
+            // Add improved country polygons - with more realistic shapes for major countries
+            data.forEach(country => {
+                if (!country.coordinates || !country.coordinates.length) {
+                    return; // Skip countries without coordinates
+                }
+                
+                try {
+                    const polygon = L.polygon(country.coordinates, {
+                        color: '#666',
+                        weight: 1,
+                        fillColor: getColor(country.value),
+                        fillOpacity: 0.7
+                    }).addTo(map);
+                    
+                    // Add tooltip
+                    const tooltipContent = `
+                        <strong>${country.name}</strong><br>
+                        ${formatValue(country.value, indicator)}
+                    `;
+                    polygon.bindTooltip(tooltipContent);
+                    
+                    // Add hover effect
+                    polygon.on('mouseover', function() {
+                        this.setStyle({
+                            weight: 2,
+                            color: '#fff'
+                        });
+                    });
+                    
+                    polygon.on('mouseout', function() {
+                        this.setStyle({
+                            weight: 1,
+                            color: '#666'
+                        });
+                    });
+                } catch (e) {
+                    console.error(`Error adding polygon for ${country.name}:`, e);
+                }
+            });
+        }
+        
+        // Update key insights
+        function updateKeyInsights(data, indicator, indicatorText) {
+            // Calculate global average
+            let sum = 0;
+            let count = 0;
+            let highest = { value: -Infinity, country: 'N/A' };
+            let lowest = { value: Infinity, country: 'N/A' };
+            
+            // Find Indonesia and USA data
+            let indonesiaData = null;
+            let usaData = null;
+            
+            data.forEach(country => {
+                if (country.value !== null && !isNaN(country.value)) {
+                    sum += country.value;
+                    count++;
+                    
+                    if (country.value > highest.value) {
+                        highest = { value: country.value, country: country.name };
+                    }
+                    
+                    if (country.value < lowest.value) {
+                        lowest = { value: country.value, country: country.name };
+                    }
+                    
+                    // Check for Indonesia
+                    if (country.name === 'Indonesia') {
+                        indonesiaData = country;
+                    }
+                    
+                    // Check for USA (with multiple possible names)
+                    if (country.name === 'United States' || 
+                        country.name === 'USA' || 
+                        country.name === 'United States of America' || 
+                        country.name === 'US') {
+                        usaData = country;
+                    }
+                }
+            });
+            
+            const average = count > 0 ? sum / count : 0;
+            
+            // Update global stats
+            document.getElementById('global-average').textContent = formatValue(average, indicator);
+            document.getElementById('highest-country').textContent = highest.country;
+            document.getElementById('highest-value').textContent = formatValue(highest.value, indicator);
+            document.getElementById('lowest-country').textContent = lowest.country;
+            document.getElementById('lowest-value').textContent = formatValue(lowest.value, indicator);
+            
+            // Update country comparison section
+            document.getElementById('world-average-value').textContent = formatValue(average, indicator);
+            
+            // Update USA data
+            if (usaData) {
+                document.getElementById('usa-value').textContent = formatValue(usaData.value, indicator);
+                
+                const usaCompare = document.querySelector('.country-metric:nth-child(2) .country-compare');
+                const usaDiff = usaData.value - average;
+                const usaPercDiff = (usaDiff / average) * 100;
+                
+                if (usaDiff > 0) {
+                    usaCompare.innerHTML = `
+                        <span class="compare-value positive">
+                            <i class="fas fa-arrow-up"></i> ${Math.abs(usaPercDiff).toFixed(1)}% above average
+                        </span>
+                    `;
+                } else {
+                    usaCompare.innerHTML = `
+                        <span class="compare-value negative">
+                            <i class="fas fa-arrow-down"></i> ${Math.abs(usaPercDiff).toFixed(1)}% below average
+                        </span>
+                    `;
+                }
+            } else {
+                document.getElementById('usa-value').textContent = 'N/A';
+                document.querySelector('.country-metric:nth-child(2) .country-compare').innerHTML = '';
+            }
+            
+            // Update Indonesia data
+            if (indonesiaData) {
+                document.getElementById('indonesia-value').textContent = formatValue(indonesiaData.value, indicator);
+                
+                const indonesiaCompare = document.querySelector('.country-metric:nth-child(3) .country-compare');
+                const indonesiaDiff = indonesiaData.value - average;
+                const indonesiaPercDiff = (indonesiaDiff / average) * 100;
+                
+                if (indonesiaDiff > 0) {
+                    indonesiaCompare.innerHTML = `
+                        <span class="compare-value positive">
+                            <i class="fas fa-arrow-up"></i> ${Math.abs(indonesiaPercDiff).toFixed(1)}% above average
+                        </span>
+                    `;
+                } else {
+                    indonesiaCompare.innerHTML = `
+                        <span class="compare-value negative">
+                            <i class="fas fa-arrow-down"></i> ${Math.abs(indonesiaPercDiff).toFixed(1)}% below average
+                        </span>
+                    `;
+                }
+            } else {
+                document.getElementById('indonesia-value').textContent = 'N/A';
+                document.querySelector('.country-metric:nth-child(3) .country-compare').innerHTML = '';
+            }
+            
+            // Update country comparison chart
+            updateCountryComparisonChart(average, usaData ? usaData.value : null, indonesiaData ? indonesiaData.value : null, indicator, indicatorText);
+        }
+        
+        // Update country comparison chart
+        function updateCountryComparisonChart(worldAvg, usaValue, indonesiaValue, indicator, indicatorText) {
+            const ctx = document.getElementById('country-comparison-chart').getContext('2d');
+            
+            // Destroy previous chart if it exists
+            if (window.countryComparisonChart) {
+                window.countryComparisonChart.destroy();
+            }
+            
+            // Prepare data
+            const labels = ['World Average', 'United States', 'Indonesia'];
+            const data = [worldAvg, usaValue, indonesiaValue];
+            
+            // Handle missing values
+            for (let i = 0; i < data.length; i++) {
+                if (data[i] === null || isNaN(data[i])) {
+                    data[i] = 0;
+                }
+            }
+            
+            // Create chart
+            window.countryComparisonChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: indicatorText,
+                        data: data,
+                        backgroundColor: [
+                            'rgba(46, 204, 113, 0.7)',  // World
+                            'rgba(52, 152, 219, 0.7)',  // USA
+                            'rgba(231, 76, 60, 0.7)'    // Indonesia
+                        ],
+                        borderColor: [
+                            'rgba(46, 204, 113, 1)',
+                            'rgba(52, 152, 219, 1)',
+                            'rgba(231, 76, 60, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return formatValue(context.raw, indicator);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatValue(value, indicator);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Update regional comparison chart
+        function updateRegionalChart(data, indicator, indicatorText) {
+            const regions = {
+                'EAS': { name: 'East Asia & Pacific', sum: 0, count: 0 },
+                'ECS': { name: 'Europe & Central Asia', sum: 0, count: 0 },
+                'LCN': { name: 'Latin America & Caribbean', sum: 0, count: 0 },
+                'MEA': { name: 'Middle East & North Africa', sum: 0, count: 0 },
+                'NAC': { name: 'North America', sum: 0, count: 0 },
+                'SAS': { name: 'South Asia', sum: 0, count: 0 },
+                'SSF': { name: 'Sub-Saharan Africa', sum: 0, count: 0 }
+            };
+            
+            // Calculate averages by region
+            data.forEach(country => {
+                if (country.region && regions[country.region] && country.value !== null && !isNaN(country.value)) {
+                    regions[country.region].sum += country.value;
+                    regions[country.region].count++;
+                }
+            });
+            
+            // Prepare chart data
+            const labels = [];
+            const values = [];
+            
+            for (const code in regions) {
+                if (regions[code].count > 0) {
+                    labels.push(regions[code].name);
+                    values.push(regions[code].sum / regions[code].count);
+                }
+            }
+            
+            // Create chart
+            const ctx = document.getElementById('regional-chart').getContext('2d');
+            
+            // Destroy previous chart if it exists
+            if (window.regionalChart) {
+                window.regionalChart.destroy();
+            }
+            
+            window.regionalChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: indicatorText,
+                        data: values,
+                        backgroundColor: 'rgba(93, 92, 222, 0.7)',
+                        borderColor: 'rgba(93, 92, 222, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return formatValue(context.raw, indicator);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatValue(value, indicator);
+                                }
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Update income level comparison chart
+        function updateIncomeChart(data, indicator, indicatorText) {
+            const incomes = {
+                'HIC': { name: 'High Income', sum: 0, count: 0 },
+                'UMC': { name: 'Upper Middle Income', sum: 0, count: 0 },
+                'LMC': { name: 'Lower Middle Income', sum: 0, count: 0 },
+                'LIC': { name: 'Low Income', sum: 0, count: 0 }
+            };
+            
+            // Calculate averages by income level
+            data.forEach(country => {
+                if (country.income && incomes[country.income] && country.value !== null && !isNaN(country.value)) {
+                    incomes[country.income].sum += country.value;
+                    incomes[country.income].count++;
+                }
+            });
+            
+            // Prepare chart data
+            const labels = [];
+            const values = [];
+            
+            for (const code in incomes) {
+                if (incomes[code].count > 0) {
+                    labels.push(incomes[code].name);
+                    values.push(incomes[code].sum / incomes[code].count);
+                }
+            }
+            
+            // Create chart
+            const ctx = document.getElementById('income-chart').getContext('2d');
+            
+            // Destroy previous chart if it exists
+            if (window.incomeChart) {
+                window.incomeChart.destroy();
+            }
+            
+            window.incomeChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: indicatorText,
+                        data: values,
+                        backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                        borderColor: 'rgba(52, 152, 219, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return formatValue(context.raw, indicator);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatValue(value, indicator);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Update Teacher-Student Ratio chart
+        function updateTeacherRatioChart() {
+            const ctx = document.getElementById('teacher-ratio-chart').getContext('2d');
+            
+            // Prepare data
+            const countries = ['World Average', 'High Income', 'Upper-Middle Income', 'Lower-Middle Income', 'Low Income', 'United States', 'Indonesia'];
+            const ratios = [23, 14, 18, 27, 39, 14, 28];
+            
+            // Create chart
+            window.teacherRatioChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: countries,
+                    datasets: [{
+                        label: 'Students per Teacher (Primary)',
+                        data: ratios,
+                        backgroundColor: [
+                            'rgba(46, 204, 113, 0.7)',
+                            'rgba(155, 89, 182, 0.7)',
+                            'rgba(241, 196, 15, 0.7)',
+                            'rgba(230, 126, 34, 0.7)',
+                            'rgba(231, 76, 60, 0.7)',
+                            'rgba(52, 152, 219, 0.7)',
+                            'rgba(231, 76, 60, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(46, 204, 113, 1)',
+                            'rgba(155, 89, 182, 1)',
+                            'rgba(241, 196, 15, 1)',
+                            'rgba(230, 126, 34, 1)',
+                            'rgba(231, 76, 60, 1)',
+                            'rgba(52, 152, 219, 1)',
+                            'rgba(231, 76, 60, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.raw + ':1 (students per teacher)';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Students per Teacher'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Update Dropout Rate chart with tertiary education data
+        function updateDropoutRateChart() {
+            const ctx = document.getElementById('dropout-chart').getContext('2d');
+            
+            // Prepare data including tertiary education
+            const countries = ['World Average', 'High Income', 'Upper-Middle Income', 'Lower-Middle Income', 'Low Income', 'United States', 'Indonesia'];
+            const primaryRates = [8.5, 2.7, 5.8, 9.2, 21.5, 4.2, 7.6];
+            const secondaryRates = [15.2, 6.3, 12.7, 18.5, 33.8, 7.1, 16.4];
+            const tertiaryRates = [30.5, 25.4, 28.9, 33.7, 45.2, 28.0, 35.7];
+            
+            // Create chart
+            window.dropoutChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: countries,
+                    datasets: [
+                        {
+                            label: 'Primary Education',
+                            data: primaryRates,
+                            backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                            borderColor: 'rgba(52, 152, 219, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Secondary Education',
+                            data: secondaryRates,
+                            backgroundColor: 'rgba(231, 76, 60, 0.7)',
+                            borderColor: 'rgba(231, 76, 60, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Tertiary Education',
+                            data: tertiaryRates,
+                            backgroundColor: 'rgba(155, 89, 182, 0.7)',
+                            borderColor: 'rgba(155, 89, 182, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.raw + '%';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Dropout Rate (%)'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Update trend over time chart
+        function updateTrendChart(indicator, indicatorText) {
+            // Generate trend data (simulated)
+            const years = [];
+            const worldData = [];
+            const usaData = [];
+            const indonesiaData = [];
+            
+            for (let year = 2000; year <= 2022; year++) {
+                years.push(year);
+                
+                // Simulated data trends
+                let baseValue;
+                switch (indicator) {
+                    case 'SE.PRM.ENRR':
+                        baseValue = 80 + (year - 2000) * 0.5;
+                        break;
+                    case 'SE.SEC.ENRR':
+                        baseValue = 65 + (year - 2000) * 0.7;
+                        break;
+                    case 'SE.TER.ENRR':
+                        baseValue = 30 + (year - 2000) * 1.2;
+                        break;
+                    case 'SE.XPD.TOTL.GD.ZS':
+                        baseValue = 4 + (year - 2000) * 0.05;
+                        break;
+                    case 'SE.ADT.LITR.ZS':
+                        baseValue = 82 + (year - 2000) * 0.3;
+                        break;
+                    case 'SE.PRM.CMPT.ZS':
+                        baseValue = 75 + (year - 2000) * 0.6;
+                        break;
+                    case 'SE.SEC.CMPT.ZS':
+                        baseValue = 60 + (year - 2000) * 0.8;
+                        break;
+                    case 'SE.PRM.PRSL.ZS':
+                        baseValue = 25 - (year - 2000) * 0.15;
+                        break;
+                    case 'SE.PRM.DURS':
+                        baseValue = 12 - (year - 2000) * 0.2;
+                        if (baseValue < 4) baseValue = 4 + Math.random() * 2;
+                        break;
+                    default:
+                        baseValue = 50 + (year - 2000);
+                }
+                
+                worldData.push(baseValue);
+                usaData.push(baseValue * 1.2 + Math.random() * 5);
+                
+                // Add more variation for Indonesia's data to show improvement
+                if (indicator === 'SE.PRM.ENRR' || indicator === 'SE.SEC.ENRR' || indicator === 'SE.ADT.LITR.ZS') {
+                    // For these indicators, Indonesia shows strong improvement
+                    indonesiaData.push(baseValue * (0.7 + (year - 2000) * 0.02) + Math.random() * 3);
+                } else if (indicator === 'SE.PRM.DURS') {
+                    // For dropout rate, Indonesia improves but still struggles
+                    indonesiaData.push(baseValue * 1.2 - (year - 2000) * 0.15 + Math.random() * 2);
+                } else {
+                    // For other indicators
+                    indonesiaData.push(baseValue * 0.9 + Math.random() * 8 + (year - 2000) * 0.2);
+                }
+            }
+            
+            // Skip if element doesn't exist
+            const ctx = document.getElementById('trend-chart')?.getContext('2d');
+            if (!ctx) return;
+            
+            // Destroy previous chart if it exists
+            if (window.trendChart) {
+                window.trendChart.destroy();
+            }
+            
+            window.trendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: years,
+                    datasets: [
+                        {
+                            label: 'World Average',
+                            data: worldData,
+                            borderColor: 'rgba(46, 204, 113, 1)',
+                            backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: 'United States',
+                            data: usaData,
+                            borderColor: 'rgba(52, 152, 219, 1)',
+                            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: 'Indonesia',
+                            data: indonesiaData,
+                            borderColor: 'rgba(231, 76, 60, 1)',
+                            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + formatValue(context.raw, indicator);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            ticks: {
+                                callback: function(value) {
+                                    return formatValue(value, indicator);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Format value based on indicator type
+        function formatValue(value, indicator) {
+            if (value === null || isNaN(value)) {
+                return 'No data';
+            }
+            
+            if (indicator === 'SE.XPD.TOTL.GD.ZS') {
+                return value.toFixed(1) + '%';
+            } else if (indicator === 'SE.PRM.PRSL.ZS') {
+                return value.toFixed(1) + ':1';
+            } else {
+                return value.toFixed(1) + '%';
+            }
+        }
+        
+        // Generate sample data with better country shape definitions
+        function generateSampleData(indicator, year) {
+            // Define major countries with more realistic shapes
+            const majorCountryCoordinates = {
+                'USA': [
+                    [49, -125], [49, -67], [25, -80], [25, -125], 
+                    [49, -125]
+                ],
+                'CAN': [
+                    [70, -140], [70, -52], [45, -52], [45, -140], 
+                    [70, -140]
+                ],
+                'IDN': [
+                    [-5, 95], [-5, 141], [-10, 141], [-10, 95], 
+                    [-5, 95]
+                ],
+                'RUS': [
+                    [70, 30], [70, 180], [50, 180], [50, 30], 
+                    [70, 30]
+                ],
+                'BRA': [
+                    [5, -75], [5, -35], [-30, -35], [-30, -75], 
+                    [5, -75]
+                ],
+                'CHN': [
+                    [53, 73], [53, 135], [20, 135], [20, 73], 
+                    [53, 73]
+                ],
+                'AUS': [
+                    [-10, 113], [-10, 154], [-43, 154], [-43, 113], 
+                    [-10, 113]
+                ],
+                'IND': [
+                    [35, 68], [35, 97], [8, 97], [8, 68], 
+                    [35, 68]
+                ],
+                'MEX': [
+                    [32, -117], [32, -86], [14, -86], [14, -117], 
+                    [32, -117]
+                ],
+                'GBR': [
+                    [58, -10], [58, 2], [50, 2], [50, -10], 
+                    [58, -10]
+                ],
+                'FRA': [
+                    [51, -5], [51, 8], [42, 8], [42, -5], 
+                    [51, -5]
+                ],
+                'DEU': [
+                    [55, 6], [55, 15], [47, 15], [47, 6], 
+                    [55, 6]
+                ],
+                'JPN': [
+                    [45, 128], [45, 146], [31, 146], [31, 128], 
+                    [45, 128]
+                ],
+                'ZAF': [
+                    [-22, 16], [-22, 33], [-35, 33], [-35, 16], 
+                    [-22, 16]
+                ]
+            };
+            
+            const countries = [
+                { name: 'United States', code: 'USA', region: 'NAC', income: 'HIC' },
+                { name: 'Canada', code: 'CAN', region: 'NAC', income: 'HIC' },
+                { name: 'United Kingdom', code: 'GBR', region: 'ECS', income: 'HIC' },
+                { name: 'France', code: 'FRA', region: 'ECS', income: 'HIC' },
+                { name: 'Germany', code: 'DEU', region: 'ECS', income: 'HIC' },
+                { name: 'Italy', code: 'ITA', region: 'ECS', income: 'HIC' },
+                { name: 'Spain', code: 'ESP', region: 'ECS', income: 'HIC' },
+                { name: 'Portugal', code: 'PRT', region: 'ECS', income: 'HIC' },
+                { name: 'Greece', code: 'GRC', region: 'ECS', income: 'HIC' },
+                { name: 'Sweden', code: 'SWE', region: 'ECS', income: 'HIC' },
+                { name: 'Norway', code: 'NOR', region: 'ECS', income: 'HIC' },
+                { name: 'Finland', code: 'FIN', region: 'ECS', income: 'HIC' },
+                { name: 'Denmark', code: 'DNK', region: 'ECS', income: 'HIC' },
+                { name: 'Iceland', code: 'ISL', region: 'ECS', income: 'HIC' },
+                { name: 'Netherlands', code: 'NLD', region: 'ECS', income: 'HIC' },
+                { name: 'Belgium', code: 'BEL', region: 'ECS', income: 'HIC' },
+                { name: 'Switzerland', code: 'CHE', region: 'ECS', income: 'HIC' },
+                { name: 'Austria', code: 'AUT', region: 'ECS', income: 'HIC' },
+                { name: 'Ireland', code: 'IRL', region: 'ECS', income: 'HIC' },
+                { name: 'Poland', code: 'POL', region: 'ECS', income: 'UMC' },
+                { name: 'Czech Republic', code: 'CZE', region: 'ECS', income: 'HIC' },
+                { name: 'Hungary', code: 'HUN', region: 'ECS', income: 'HIC' },
+                { name: 'Slovakia', code: 'SVK', region: 'ECS', income: 'HIC' },
+                { name: 'Slovenia', code: 'SVN', region: 'ECS', income: 'HIC' },
+                { name: 'Estonia', code: 'EST', region: 'ECS', income: 'HIC' },
+                { name: 'Latvia', code: 'LVA', region: 'ECS', income: 'HIC' },
+                { name: 'Lithuania', code: 'LTU', region: 'ECS', income: 'HIC' },
+                { name: 'Russia', code: 'RUS', region: 'ECS', income: 'UMC' },
+                { name: 'Ukraine', code: 'UKR', region: 'ECS', income: 'LMC' },
+                { name: 'Belarus', code: 'BLR', region: 'ECS', income: 'UMC' },
+                { name: 'Romania', code: 'ROU', region: 'ECS', income: 'UMC' },
+                { name: 'Bulgaria', code: 'BGR', region: 'ECS', income: 'UMC' },
+                { name: 'Turkey', code: 'TUR', region: 'ECS', income: 'UMC' },
+                { name: 'China', code: 'CHN', region: 'EAS', income: 'UMC' },
+                { name: 'Japan', code: 'JPN', region: 'EAS', income: 'HIC' },
+                { name: 'South Korea', code: 'KOR', region: 'EAS', income: 'HIC' },
+                { name: 'India', code: 'IND', region: 'SAS', income: 'LMC' },
+                { name: 'Indonesia', code: 'IDN', region: 'EAS', income: 'LMC' },
+                { name: 'Malaysia', code: 'MYS', region: 'EAS', income: 'UMC' },
+                { name: 'Thailand', code: 'THA', region: 'EAS', income: 'UMC' },
+                { name: 'Vietnam', code: 'VNM', region: 'EAS', income: 'LMC' },
+                { name: 'Philippines', code: 'PHL', region: 'EAS', income: 'LMC' },
+                { name: 'Singapore', code: 'SGP', region: 'EAS', income: 'HIC' },
+                { name: 'Australia', code: 'AUS', region: 'EAS', income: 'HIC' },
+                { name: 'New Zealand', code: 'NZL', region: 'EAS', income: 'HIC' },
+                { name: 'Brazil', code: 'BRA', region: 'LCN', income: 'UMC' },
+                { name: 'Argentina', code: 'ARG', region: 'LCN', income: 'UMC' },
+                { name: 'Mexico', code: 'MEX', region: 'LCN', income: 'UMC' },
+                { name: 'Colombia', code: 'COL', region: 'LCN', income: 'UMC' },
+                { name: 'Peru', code: 'PER', region: 'LCN', income: 'UMC' },
+                { name: 'Chile', code: 'CHL', region: 'LCN', income: 'HIC' },
+                { name: 'Egypt', code: 'EGY', region: 'MEA', income: 'LMC' },
+                { name: 'South Africa', code: 'ZAF', region: 'SSF', income: 'UMC' },
+                { name: 'Nigeria', code: 'NGA', region: 'SSF', income: 'LMC' },
+                { name: 'Kenya', code: 'KEN', region: 'SSF', income: 'LMC' },
+                { name: 'Ethiopia', code: 'ETH', region: 'SSF', income: 'LIC' },
+                { name: 'Ghana', code: 'GHA', region: 'SSF', income: 'LMC' },
+                { name: 'Morocco', code: 'MAR', region: 'MEA', income: 'LMC' },
+                { name: 'Algeria', code: 'DZA', region: 'MEA', income: 'LMC' },
+                { name: 'Tunisia', code: 'TUN', region: 'MEA', income: 'LMC' },
+                { name: 'Saudi Arabia', code: 'SAU', region: 'MEA', income: 'HIC' },
+                { name: 'United Arab Emirates', code: 'ARE', region: 'MEA', income: 'HIC' },
+                { name: 'Israel', code: 'ISR', region: 'MEA', income: 'HIC' }
+            ];
+            
+            // Generate values for each country
+            return countries.map(country => {
+                let baseValue;
+                
+                // Set base value based on indicator and income level
+                switch (indicator) {
+                    case 'SE.PRM.ENRR':
+                        baseValue = country.income === 'HIC' ? 95 : 
+                                   country.income === 'UMC' ? 90 : 
+                                   country.income === 'LMC' ? 85 : 75;
+                        break;
+                    case 'SE.SEC.ENRR':
+                        baseValue = country.income === 'HIC' ? 90 : 
+                                   country.income === 'UMC' ? 80 : 
+                                   country.income === 'LMC' ? 65 : 40;
+                        break;
+                    case 'SE.TER.ENRR':
+                        baseValue = country.income === 'HIC' ? 70 : 
+                                   country.income === 'UMC' ? 45 : 
+                                   country.income === 'LMC' ? 25 : 10;
+                        break;
+                    case 'SE.XPD.TOTL.GD.ZS':
+                        baseValue = country.income === 'HIC' ? 5.5 : 
+                                   country.income === 'UMC' ? 4.5 : 
+                                   country.income === 'LMC' ? 4.0 : 3.5;
+                        break;
+                    case 'SE.ADT.LITR.ZS':
+                        baseValue = country.income === 'HIC' ? 98 : 
+                                   country.income === 'UMC' ? 92 : 
+                                   country.income === 'LMC' ? 80 : 65;
+                        break;
+                    case 'SE.PRM.CMPT.ZS':
+                        baseValue = country.income === 'HIC' ? 97 : 
+                                   country.income === 'UMC' ? 90 : 
+                                   country.income === 'LMC' ? 80 : 60;
+                        break;
+                    case 'SE.SEC.CMPT.ZS':
+                        baseValue = country.income === 'HIC' ? 90 : 
+                                   country.income === 'UMC' ? 75 : 
+                                   country.income === 'LMC' ? 55 : 35;
+                        break;
+                    case 'SE.PRM.PRSL.ZS':
+                        // Pupil-teacher ratio (lower is better)
+                        baseValue = country.income === 'HIC' ? 15 : 
+                                   country.income === 'UMC' ? 20 : 
+                                   country.income === 'LMC' ? 30 : 40;
+                        break;
+                    case 'SE.PRM.DURS':
+                        // Dropout rate (lower is better)
+                        baseValue = country.income === 'HIC' ? 5 : 
+                                   country.income === 'UMC' ? 10 : 
+                                   country.income === 'LMC' ? 15 : 25;
+                        break;
+                    default:
+                        baseValue = 50;
+                }
+                
+                // Add random variation
+                let value = baseValue + (Math.random() * 10 - 5);
+                
+                // Adjust based on year (slight trend up)
+                value += (parseInt(year) - 2000) * 0.2;
+                
+                // Ensure reasonable bounds
+                if (indicator !== 'SE.XPD.TOTL.GD.ZS' && 
+                    indicator !== 'SE.PRM.PRSL.ZS' && 
+                    indicator !== 'SE.PRM.DURS') {
+                    value = Math.min(100, Math.max(0, value));
+                } else {
+                    value = Math.max(0, value);
+                }
+                
+                // Special adjustments for specific countries
+                if (country.name === 'United States' || 
+                    country.name === 'USA' || 
+                    country.name === 'US' || 
+                    country.name === 'United States of America') {
+                    // USA typically has high values for most indicators
+                    if (indicator === 'SE.PRM.PRSL.ZS' || indicator === 'SE.PRM.DURS') {
+                        value = baseValue * 0.8; // Lower is better for these
+                    } else {
+                        value = baseValue * 1.1;
+                    }
+                }
+                
+                if (country.name === 'Indonesia') {
+                    // Adjust for Indonesia based on indicator
+                    if (indicator === 'SE.PRM.ENRR') {
+                        value = 93.1; // Primary enrollment
+                    } else if (indicator === 'SE.SEC.ENRR') {
+                        value = 88.5; // Secondary enrollment
+                    } else if (indicator === 'SE.TER.ENRR') {
+                        value = 36.3; // Tertiary enrollment
+                    } else if (indicator === 'SE.XPD.TOTL.GD.ZS') {
+                        value = 3.6; // Education expenditure
+                    } else if (indicator === 'SE.ADT.LITR.ZS') {
+                        value = 95.7; // Literacy rate
+                    } else if (indicator === 'SE.PRM.PRSL.ZS') {
+                        value = 28.0; // Pupil-teacher ratio
+                    } else if (indicator === 'SE.PRM.DURS') {
+                        value = 7.6; // Dropout rate
+                    } else if (indicator === 'SE.PRM.CMPT.ZS') {
+                        value = 92.3; // Primary completion
+                    } else if (indicator === 'SE.SEC.CMPT.ZS') {
+                        value = 80.1; // Secondary completion
+                    }
+                }
+                
+                // Get predefined coordinates for major countries or create simple shapes
+                let coordinates;
+                
+                if (majorCountryCoordinates[country.code]) {
+                    coordinates = majorCountryCoordinates[country.code];
+                } else {
+                    // Generate a simple polygon for other countries
+                    const centerLat = (Math.random() * 140) - 70;
+                    const centerLng = (Math.random() * 360) - 180;
+                    const size = 5 + Math.random() * 5;
+                    
+                    coordinates = [
+                        [centerLat + size/2, centerLng - size/2],
+                        [centerLat + size/2, centerLng + size/2],
+                        [centerLat - size/2, centerLng + size/2],
+                        [centerLat - size/2, centerLng - size/2],
+                        [centerLat + size/2, centerLng - size/2] // Close the polygon
+                    ];
+                }
+                
+                return {
+                    ...country,
+                    value,
+                    coordinates
+                };
+            });
+        }
+    </script>
+</body>
+</html>

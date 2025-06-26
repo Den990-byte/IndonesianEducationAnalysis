@@ -1,0 +1,131 @@
+#map {
+    height: 600px;
+    width: 100%;
+    margin: 0 auto;
+    display: block;
+}
+
+
+.profile-icon {
+    align-items: center;
+    justify-content: center; /* center group */
+    display: flex;
+  }
+  
+.profile-img {
+    width: 30px;
+    height: 30px;
+
+  }
+
+.icon-bar {
+    display: flex;
+    justify-content: left; /* center group */
+    gap: 40px; /* space between icons */
+    margin: 20px 0;
+  }
+  
+.map-icon {
+    width: 40px;
+    height: auto;
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+  
+.map-icon:hover {
+    transform: scale(1.1);
+  }
+
+body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background-color: #a7b8c1;
+    color: #333;
+}
+
+.navbar {
+    background-color: #000;
+    padding: 1em;
+}
+
+.navbar ul {
+    list-style-type: none;
+    display: flex;
+    justify-content: left;
+    margin: 0;
+    padding: 0;
+}
+
+.navbar li {
+    margin: 0 1.5em;
+}
+
+.navbar a {
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+    transition: color 0.3s;
+}
+
+.navbar a:hover {
+    color: #f39c12;
+}
+
+.container {
+    padding: 2em;
+}
+
+
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th, .data-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+}
+
+.data-table th {
+    background-color: #333;
+    color: white;
+}
+
+.table-container {
+    max-height: 500px;
+    overflow-y: auto;
+    background: white;
+    padding: 1em;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.modern-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95em;
+    min-width: 800px;
+}
+
+.modern-table thead {
+    position: sticky;
+    top: 0;
+    background-color: #1a1a1a;
+    color: #fff;
+    z-index: 1;
+}
+
+.modern-table th, .modern-table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #e0e0e0;
+    text-align: left;
+}
+
+.modern-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.modern-table tr:hover {
+    background-color: #f1f1f1;
+}

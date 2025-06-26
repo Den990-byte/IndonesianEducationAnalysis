@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>World Education Data</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://unpkg.com/topojson-client@3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+    <style>
+        :root {
+            --primary-color: #5D5CDE;
+            --text-color: #333;
+            --bg-color: #FFFFFF;
+            --card-bg: #f8f9fa;
+            --border-color: #e0e0e0;
+        }
+        
+        .dark {
+            --primary-color: #6e6df1;
+            --text-color: #e0e0e0;
+            --bg-color: #181818;
+            --card-bg: #252525;
+            --border-color: #444;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        .container {
+            padding: 20px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            margin-bottom: 2rem;
+            font-size: 2.5rem;
+            color: var(--text-color);
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        /* Left-aligned data options */
+        .data-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            justify-content: flex-start; /* Left alignment */
+            padding-left: 10px; /* Added slight padding */
+        }
+        
+        .data-card {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-align: center;
+            width: 150px;
+            border: 2px solid transparent;
+        }
+        
+        .data-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+            border-color: var(--primary-color);
+        }
+        
+        .data-card.active {
+            border-color: var(--primary-color);
+            background-color: rgba(93, 92, 222, 0.1);
+        }
+        
+        .data-card img {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 10px;
+        }
+        
+        .data-card h3 {
+            font-size: 1.1rem;
+            margin-top: 8px;
+        }
+        
+        /* Map and legend container - positioned more to left with padding adjustments */
+        .map-legend-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 2rem;
+            padding: 0 5px 0 10px; /* Slightly more padding on left to align with data options */
+        }
+        
+        /* Adjusted map width to be larger */
+        #map-container {
+            flex: 0 0 85%; /* Increased from 80% to 85% */
+            height: 500px;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            position: relative;
+        }
+        
+        /* Compact legend */
+        .legend {
+            flex: 0 0 13%; /* Reduced to 13% (from 18%) */
+            background-color: var(--card-bg);
+            padding: 12px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            align-self: flex-start;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .legend h3 {
+            font-size: 1rem;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+        
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            background-color: rgba(255,255,255,0.8);
+            font-size: 1.2rem;
+            color: var(--primary-color);
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1000;
+        }
+        
+        .dark .loading {
+            background-color: rgba(24,24,24,0.8);
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(93, 92, 222, 0.2);
+            border-left-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .profile-icon {
+            align-items: center;
+            justify-content: center;
+            display: flex;
+        }
+  
+        .profile-img {
+            width: 30px;
+            height: 30px;
+        }
+        
+        /* Made legend items more compact */
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+            border-radius: 3px;
+        }
+        
+        .data-info {
+            margin-top: 1rem;
+        }
+        
+        .toolbar {
+            background: #000;
+            color: white;
+            padding: 1rem;
+            display: flex;
+            justify-content: left;
+            align-items: left;
+        }
+        
+        .toolbar a {
+            color: white;
+            text-decoration: none;
+            margin: 0 1rem;
+            padding: 0.5rem;
+            transition: color 0.3s;
+        }
+        
+        .toolbar a:hover {
+            color: var(--primary-color);
+        }
+        
+        .tooltip {
+            position: absolute;
+            background: white;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            pointer-events: none;
+            z-index: 1000;
+            font-size: 14px;
+            max-width: 200px;
+            display: none;
+        }
+        
+        .dark .tooltip {
+            background: #333;
+            border-color: #555;
+            color: #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .data-options {
+                gap: 1rem;
+            }
+            
+            .data-card {
+                width: 80px;
+                padding: 15px;
+            }
+            
+            .data-card img {
+                width: 30px;
+                height: 30px;
+            }
+            
+            /* Stack map and legend vertically on mobile */
+            .map-legend-container {
+                flex-direction: column;
+            }
+            
+            #map-container {
+                flex: none;
+                width: 100%;
+                height: 400px;
+            }
+            
+            .legend {
+                flex: none;
+                width: 100%;
+                margin-top: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <a href="/">Home</a>
+        <a href="/data">Data</a>
+        <a href="/visualization">Visualization</a>
+        <a href="/akun" style="margin-left: auto;">
+            <img src="/static/images/person.png" alt="Profile" class="profile-img">
+        </a>
+    </div>
+    
+    <div class="container">
+        <h1>World Education Data</h1>
+        
+        <div class="data-options">
+            <div class="data-card active" data-type="iq">
+                <img src="/static/images/IQ.png" alt="IQ Icon">
+                <h3>IQ Data</h3>
+            </div>
+            <div class="data-card" data-type="pisa">
+                <img src="/static/images/PISA.png" alt="PISA Icon">
+                <h3>PISA Scores</h3>
+            </div>
+            <div class="data-card" data-type="literacy">
+                <img src="/static/images/Literacy.png" alt="Literacy Icon">
+                <h3>Literacy Rate</h3>
+            </div>
+        </div>
+        
+        <!-- Map and legend side-by-side container -->
+        <div class="map-legend-container">
+            <div id="map-container">
+                <div id="map" style="height: 100%;"></div>
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <span>Loading map data...</span>
+                </div>
+                <div id="tooltip" class="tooltip"></div>
+            </div>
+            
+            <!-- Legend beside the map -->
+            <div class="legend" id="legend"></div>
+        </div>
+        
+        <div class="data-info" id="data-info"></div>
+    </div>
+
+    <script>
+        // Check for dark mode preference
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+        
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            if (event.matches) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        });
+        
+        // Map and data variables
+        let map;
+        let geoJsonLayer;
+        let currentDataType = 'iq';
+        let worldData = [];
+        let tooltip = document.getElementById('tooltip');
+        
+        // Initialize the map
+        function initMap() {
+            // Create the map if it doesn't exist
+            if (!map) {
+                map = L.map('map', {
+                    center: [20, 0],
+                    zoom: 2,
+                    zoomControl: false,
+                    dragging: false,
+                    touchZoom: false,
+                    doubleClickZoom: false,
+                    scrollWheelZoom: false,
+                    boxZoom: false,
+                    tap: false,
+                    keyboard: false,
+                    attributionControl: false
+                });
+                
+                // Set a custom background instead of using tile layers
+                map.getContainer().style.background = '#f5f9fd';
+            }
+            
+            // Load the GeoJSON data
+            loadGeoJson();
+        }
+        
+        // Load the GeoJSON data for the world
+        function loadGeoJson() {
+            fetch('/static/geojson/world.geo.json')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load GeoJSON file');
+                    }
+                    return response.json();
+                })
+                .then(geoJsonData => {
+                    // Fetch the data for the current type
+                    loadWorldData(currentDataType, geoJsonData);
+                })
+                .catch(error => {
+                    console.error('Error loading GeoJSON:', error);
+                    document.querySelector('.loading').innerHTML = `Error loading map data: ${error.message}`;
+                });
+        }
+        
+        // Load the data for the selected type
+        function loadWorldData(dataType, countries) {
+            // Show loading state
+            document.querySelector('.loading').style.display = 'flex';
+            
+            // Map the data type to the correct CSV file
+            let dataFile;
+            if (dataType === 'iq') {
+                dataFile = 'IQ.csv';
+            } else if (dataType === 'pisa') {
+                dataFile = 'PISA.csv';
+            } else if (dataType === 'literacy') {
+                dataFile = 'Education.csv';
+            }
+            
+            // Fetch data directly from the CSV file
+            fetch(`/data/${dataFile}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Failed to load ${dataFile} (${response.status})`);
+                    }
+                    return response.text();
+                })
+                .then(csvText => {
+                    // Parse CSV data
+                    const lines = csvText.split('\n');
+                    const headers = lines[0].split(',');
+                    
+                    // Find the column indices for country and value
+                    const countryIndex = headers.findIndex(h => 
+                        h.toLowerCase().includes('country') || 
+                        h.toLowerCase().includes('nation'));
+                    
+                    // For different data types, look for different value columns
+                    let valueIndex;
+                    if (dataType === 'iq') {
+                        valueIndex = headers.findIndex(h => 
+                            h.toLowerCase().includes('iq') || 
+                            h.toLowerCase().includes('intelligence'));
+                    } else if (dataType === 'pisa') {
+                        valueIndex = headers.findIndex(h => 
+                            h.toLowerCase().includes('score') || 
+                            h.toLowerCase().includes('pisa'));
+                    } else if (dataType === 'literacy') {
+                        valueIndex = headers.findIndex(h => 
+                            h.toLowerCase().includes('literacy') || 
+                            h.toLowerCase().includes('rate'));
+                    }
+                    
+                    // Default to the second column if we couldn't find a specific value column
+                    if (valueIndex === -1) valueIndex = 1;
+                    if (countryIndex === -1) countryIndex = 0;
+                    
+                    // Handle the format from your example (ranking,country,score)
+                    let rankingIndex = -1;
+                    for (let i = 0; i < headers.length; i++) {
+                        if (headers[i].toLowerCase().includes('rank')) {
+                            rankingIndex = i;
+                            break;
+                        }
+                    }
+                    
+                    // Parse the data
+                    worldData = [];
+                    for (let i = 1; i < lines.length; i++) {
+                        if (!lines[i].trim()) continue;
+                        
+                        try {
+                            const values = lines[i].split(',');
+                            
+                            // Check if this might be the format "1,Japan,106.48"
+                            if (values.length >= 3 && !isNaN(parseInt(values[0]))) {
+                                worldData.push({
+                                    ranking: parseInt(values[0]),
+                                    country: values[1].trim(),
+                                    value: parseFloat(values[2])
+                                });
+                            } else {
+                                // Standard CSV format
+                                worldData.push({
+                                    ranking: rankingIndex !== -1 ? parseInt(values[rankingIndex]) : i,
+                                    country: values[countryIndex].trim(),
+                                    value: parseFloat(values[valueIndex])
+                                });
+                            }
+                        } catch (e) {
+                            console.error("Error parsing line:", lines[i], e);
+                        }
+                    }
+                    
+                    // Update the map with the data
+                    updateMap(countries);
+                    
+                    // Hide loading state
+                    document.querySelector('.loading').style.display = 'none';
+                })
+                .catch(error => {
+                    console.error(`Error loading ${dataType} data:`, error);
+                    document.querySelector('.loading').innerHTML = `Error loading data: ${error.message}`;
+                });
+        }
+        
+        // Position tooltip near cursor
+        function positionTooltip(e) {
+            const rect = map.getContainer().getBoundingClientRect();
+            const left = e.originalEvent.clientX - rect.left + 10;
+            const top = e.originalEvent.clientY - rect.top + 10;
+            
+            tooltip.style.left = `${left}px`;
+            tooltip.style.top = `${top}px`;
+            
+            // Make sure tooltip stays within map
+            const tooltipRect = tooltip.getBoundingClientRect();
+            if (tooltipRect.right > rect.right) {
+                tooltip.style.left = `${left - tooltipRect.width - 20}px`;
+            }
+            if (tooltipRect.bottom > rect.bottom) {
+                tooltip.style.top = `${top - tooltipRect.height - 20}px`;
+            }
+        }
+        
+        // Update the map with the current data
+        function updateMap(countries) {
+            // Remove existing GeoJSON layer if it exists
+            if (geoJsonLayer) {
+                map.removeLayer(geoJsonLayer);
+            }
+            
+            // Get min and max values for scaling
+            let allValues = worldData.map(d => Number(d.value) || 0).filter(v => !isNaN(v));
+            let minValue = Math.min(...allValues);
+            let maxValue = Math.max(...allValues);
+            
+            // Function to get color based on value
+            function getColor(value) {
+                if (!value || isNaN(value)) return '#ccc';
+                
+                // Normalize the score
+                const normalized = (value - minValue) / (maxValue - minValue);
+                
+                if (currentDataType === 'iq') {
+                    // For IQ: red for lower, blue for higher
+                    if (normalized < 0.25) {
+                        // Lower scores: dark red to red
+                        const t = normalized / 0.25;
+                        return d3.interpolate('#8B0000', '#ff0000')(t);
+                    } else if (normalized < 0.5) {
+                        // Lower-mid scores: red to orange
+                        const t = (normalized - 0.25) / 0.25;
+                        return d3.interpolate('#ff0000', '#FFA07A')(t);
+                    } else if (normalized < 0.75) {
+                        // Higher-mid scores: light blue to medium blue
+                        const t = (normalized - 0.5) / 0.25;
+                        return d3.interpolate('#87CEEB', '#4682B4')(t);
+                    } else {
+                        // Highest scores: medium blue to dark blue
+                        const t = (normalized - 0.75) / 0.25;
+                        return d3.interpolate('#4682B4', '#0047AB')(t);
+                    }
+                } else if (currentDataType === 'pisa') {
+                    // For PISA: red for lower, green for higher
+                    return d3.interpolateRgb('#FF4500', '#008000')(normalized);
+                } else {
+                    // For Literacy: red for lower, purple for higher
+                    return d3.interpolateRgb('#FF4500', '#4B0082')(normalized);
+                }
+            }
+            
+            // Create the GeoJSON layer
+            geoJsonLayer = L.geoJSON(countries, {
+                style: function(feature) {
+                    const countryName = feature.properties.name;
+                    const countryData = worldData.find(d => 
+                        d.country && countryName && 
+                        d.country.toLowerCase() === countryName.toLowerCase());
+                    const value = countryData ? countryData.value : null;
+                    
+                    return {
+                        fillColor: getColor(value),
+                        weight: 0.5,
+                        opacity: 1,
+                        color: 'white',
+                        fillOpacity: 0.7
+                    };
+                },
+                onEachFeature: function(feature, layer) {
+                    const countryName = feature.properties.name;
+                    const countryData = worldData.find(d => 
+                        d.country && countryName && 
+                        d.country.toLowerCase() === countryName.toLowerCase());
+                    
+                    // Add hover and tooltip functionality
+                    layer.on({
+                        mouseover: function(e) {
+                            // Style for hover
+                            layer.setStyle({
+                                weight: 1.5,
+                                color: '#000',
+                                fillOpacity: 0.8
+                            });
+                            
+                            // Show tooltip
+                            let tooltipContent = `<strong>${countryName}</strong><br>`;
+                            if (countryData) {
+                                let label = 'Value';
+                                if (currentDataType === 'iq') label = 'Average IQ';
+                                else if (currentDataType === 'pisa') label = 'PISA Score';
+                                else if (currentDataType === 'literacy') label = 'Literacy Rate (%)';
+                                
+                                tooltipContent += `${label}: ${countryData.value ? countryData.value.toFixed(1) : 'No data'}<br>`;
+                                if (countryData.ranking) {
+                                    tooltipContent += `Rank: #${countryData.ranking}`;
+                                }
+                            } else {
+                                tooltipContent += 'No data available';
+                            }
+                            
+                            tooltip.innerHTML = tooltipContent;
+                            tooltip.style.display = 'block';
+                            positionTooltip(e);
+                        },
+                        mousemove: function(e) {
+                            positionTooltip(e);
+                        },
+                        mouseout: function(e) {
+                            geoJsonLayer.resetStyle(layer);
+                            tooltip.style.display = 'none';
+                        }
+                    });
+                }
+            }).addTo(map);
+            
+            // Update the legend
+            updateLegend(minValue, maxValue);
+        }
+        
+        // Update the legend
+        function updateLegend(min, max) {
+            const legend = document.getElementById('legend');
+            legend.innerHTML = '';
+            
+            // Set legend title based on data type
+            let title = 'Data Range';
+            if (currentDataType === 'iq') title = 'Average IQ';
+            else if (currentDataType === 'pisa') title = 'PISA Score';
+            else if (currentDataType === 'literacy') title = 'Literacy Rate (%)';
+            
+            legend.innerHTML = `<h3>${title}</h3>`;
+            
+            // Create legend items - reduced steps for a more compact legend
+            const steps = 4;
+            const stepSize = (max - min) / (steps - 1);
+            
+            for (let i = 0; i < steps; i++) {
+                const value = min + (stepSize * i);
+                const legendItem = document.createElement('div');
+                legendItem.className = 'legend-item';
+                
+                const colorBox = document.createElement('div');
+                colorBox.className = 'legend-color';
+                
+                // Get color for this value
+                const normalized = i / (steps - 1);
+                let color;
+                
+                if (currentDataType === 'iq') {
+                    if (normalized < 0.25) {
+                        color = d3.interpolate('#8B0000', '#ff0000')(normalized / 0.25);
+                    } else if (normalized < 0.5) {
+                        color = d3.interpolate('#ff0000', '#FFA07A')((normalized - 0.25) / 0.25);
+                    } else if (normalized < 0.75) {
+                        color = d3.interpolate('#87CEEB', '#4682B4')((normalized - 0.5) / 0.25);
+                    } else {
+                        color = d3.interpolate('#4682B4', '#0047AB')((normalized - 0.75) / 0.25);
+                    }
+                } else if (currentDataType === 'pisa') {
+                    color = d3.interpolateRgb('#FF4500', '#008000')(normalized);
+                } else {
+                    color = d3.interpolateRgb('#FF4500', '#4B0082')(normalized);
+                }
+                
+                colorBox.style.backgroundColor = color;
+                
+                const label = document.createElement('span');
+                label.textContent = value.toFixed(1);
+                
+                legendItem.appendChild(colorBox);
+                legendItem.appendChild(label);
+                legend.appendChild(legendItem);
+            }
+            
+            // Add an item for no data
+            const noDataItem = document.createElement('div');
+            noDataItem.className = 'legend-item';
+            
+            const noDataBox = document.createElement('div');
+            noDataBox.className = 'legend-color';
+            noDataBox.style.backgroundColor = '#ccc';
+            
+            const noDataLabel = document.createElement('span');
+            noDataLabel.textContent = 'No data';
+            
+            noDataItem.appendChild(noDataBox);
+            noDataItem.appendChild(noDataLabel);
+            legend.appendChild(noDataItem);
+        }
+        
+        // Handle data type changes
+        document.querySelectorAll('.data-card').forEach(card => {
+            card.addEventListener('click', function() {
+                // Remove active class from all cards
+                document.querySelectorAll('.data-card').forEach(c => c.classList.remove('active'));
+                
+                // Add active class to the clicked card
+                this.classList.add('active');
+                
+                // Update current data type
+                currentDataType = this.getAttribute('data-type');
+                
+                // Reload the map with new data type
+                loadGeoJson();
+            });
+        });
+        
+        // Initialize the map when the page loads
+        document.addEventListener('DOMContentLoaded', initMap);
+    </script>
+    
+<!-- Editable Content Section -->
+        <div id="main-title">Analisis Peta Dunia</div>
+    <div class="edit-btn-wrapper">
+  <button onclick="promptPassword()">Edit</button>
+</div>
+
+
+  <div id="content">
+    This is the default content. Click the button below to edit (admin only).
+  </div>
+
+  <div id="editBox" style="display:none;">
+  <textarea id="editor" rows="6" style="width:100%;"></textarea><br>
+  <button onclick="saveContent()">Save</button>
+    </div>
+<script>
+const ADMIN_PASSWORD = "admin123";
+
+function promptPassword() {
+  const userInput = prompt("Enter admin password:");
+  if (userInput === ADMIN_PASSWORD) {
+    document.getElementById("editBox").style.display = "block";
+    document.getElementById("editor").value = document.getElementById("content").innerText;
+  } else {
+    alert("Incorrect password!");
+  }
+}
+
+function saveContent() {
+  let newContent = document.getElementById("editor").value;
+  newContent = newContent.replace(/\n/g, "<br>");  // preserve line breaks
+  document.getElementById("content").innerHTML = newContent;
+  localStorage.setItem("mapDescriptionContent", newContent);  // Save to device
+  document.getElementById("editBox").style.display = "none";
+}
+
+// Load from localStorage when the page loads
+window.onload = function() {
+  const saved = localStorage.getItem("mapDescriptionContent");
+  if (saved) {
+    document.getElementById("content").innerHTML = saved;
+  }
+};
+</script>
+<style>
+/* Editable text display */
+#main-title {
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 3rem;
+  font-weight: 800;
+  color: #e0e7ff;
+  background: linear-gradient(to right, #6366f1, #818cf8);
+  -webkit-background-clip: text;
+  text-align: left;
+  margin-left: 25px;
+  margin-top: 4rem;
+  margin-bottom: -40px;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
+}
+
+#content {
+  background-color: #1e1e1e;
+  color: #f1f1f1;
+  padding: 1rem;
+  border-radius: 12px;
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 20px;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+  margin-left: 40px;
+  margin-right: 40px;
+  margin-bottom: 4rem;
+}
+
+/* Edit box (textarea container) */
+.edit-btn-wrapper {
+  text-align: right;
+  margin-bottom: 1rem;
+}
+
+.edit-btn-wrapper button {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: none;
+  background-color: #4f46e5;
+  margin-right: 60px;
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.3s;
+  margin-bottom: 20px;
+}
+
+.edit-btn-wrapper button:hover {
+  background-color: #3730a3;
+}
+
+#editBox {
+  margin-top: 1rem;
+  background-color: #2a2a2a;
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 0 8px rgba(0,0,0,0.3);
+}
+
+/* Textarea styling */
+#editor {
+  width: 100%;
+  height: 180px;
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 1rem;
+  padding: 0.75rem;
+  border-radius: 8px;
+  background-color: #1c1c1c;
+  color: #f1f1f1;
+  border: 1px solid #444;
+  resize: vertical;
+}
+
+/* Buttons */
+#editBox button,
+button[onclick="promptPassword()"] {
+  margin-top: 0.1rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: none;
+  background-color: #4f46e5;
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.3s;
+  align-content: right;
+}
+
+#editBox button:hover,
+button[onclick="promptPassword()"]:hover {
+  background-color: #3730a3;
+}
+</style>
+    
+</body>
+</html>
